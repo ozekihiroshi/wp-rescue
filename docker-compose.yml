@@ -12,6 +12,7 @@ services:
     volumes:
       - wp_rescue_html:/var/www/html
       - ./wordpress/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+      - ../secure-s3-storage-for-wordpress:/var/www/html/wp-content/plugins/secure-s3-storage
     depends_on:
       - wp-rescue-db
     labels:
