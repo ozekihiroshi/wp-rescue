@@ -20,7 +20,7 @@ services:
     volumes:
       - wp_rescue_html:/var/www/html
       - ./wordpress/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
-      - ../secure-s3-storage-for-wordpress:/var/www/html/wp-content/plugins/secure-s3-storage
+      - ../secure-s3-storage-for-wordpress:/var/www/html/wp-content/plugins/ozeki-database-backup-for-s3
     depends_on:
       - wp-rescue-db
 
@@ -61,7 +61,7 @@ services:
 
     volumes:
       - wp_rescue_html:/var/www/html
-      - ../secure-s3-storage-for-wordpress:/var/www/html/wp-content/plugins/secure-s3-storage
+      - ../secure-s3-storage-for-wordpress:/var/www/html/wp-content/plugins/ozeki-database-backup-for-s3
 
     depends_on:
       - wp-rescue-db

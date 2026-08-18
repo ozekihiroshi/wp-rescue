@@ -20,7 +20,7 @@ readonly PLUGIN_SOURCE_DIR="$(
     pwd
 )"
 readonly RESTORE_TEST_FILE="${PLUGIN_SOURCE_DIR}/tests/manual/test-database-restore.php"
-readonly RELEASE_MOUNT_PATH='/release/secure-s3-storage.zip'
+readonly RELEASE_MOUNT_PATH='/release/ozeki-database-backup-for-s3.zip'
 
 readonly -a PHP_VERSIONS=('8.1' '8.3')
 readonly -a WORDPRESS_VERSIONS=('5.9.13' '7.0.2' '7.1-RC2')
@@ -49,7 +49,7 @@ resolve_plugin_zip() {
             find "${PLUGIN_SOURCE_DIR}/build" \
                 -maxdepth 1 \
                 -type f \
-                -name 'secure-s3-storage-*.zip' \
+                -name 'ozeki-database-backup-for-s3-*.zip' \
                 -print
         )
 
@@ -233,7 +233,7 @@ install_release_plugin() {
         --activate \
         --quiet
 
-    run_wp_cli "${php_version}" plugin is-active secure-s3-storage
+    run_wp_cli "${php_version}" plugin is-active ozeki-database-backup-for-s3
 
     run_wp_cli "${php_version}" eval '
         if (! class_exists("SecureS3StorageForWordpressVendor\\Aws\\S3\\S3Client")) {
@@ -256,10 +256,10 @@ stage_restore_test() {
         "wordpress:cli-php${php_version}" \
         -c '
             set -eu
-            test_dir=/var/www/html/wp-content/plugins/secure-s3-storage/tests/manual
+            test_dir=/var/www/html/wp-content/plugins/ozeki-database-backup-for-s3/tests/manual
             mkdir -p "${test_dir}"
             cp /matrix-tests/test-database-restore.php "${test_dir}/test-database-restore.php"
-            chown -R 33:33 /var/www/html/wp-content/plugins/secure-s3-storage/tests
+            chown -R 33:33 /var/www/html/wp-content/plugins/ozeki-database-backup-for-s3/tests
         '
 }
 
@@ -274,7 +274,7 @@ verify_restore_backend() {
         -e RESTORE_TEST_BACKEND="${backend}" \
         "${ACTIVE_CONTAINER}" \
         php \
-        /var/www/html/wp-content/plugins/secure-s3-storage/tests/manual/test-database-restore.php
+        /var/www/html/wp-content/plugins/ozeki-database-backup-for-s3/tests/manual/test-database-restore.php
 }
 
 run_cell() {
