@@ -1,38 +1,32 @@
-name: wp-rescue
+name: wp-rescue-ziptest
 
 services:
-  wp-rescue:
-    image: ${WORDPRESS_IMAGE:-wordpress:php8.3-apache}
-    container_name: wp-rescue
+  wp-rescue-ziptest:
+    image: wordpress:php8.3-apache
+    build:
+      context: .
+      dockerfile: wordpress/Dockerfile
+    container_name: wp-rescue-ziptest
     restart: unless-stopped
     environment:
-      WORDPRESS_DB_HOST: wp-rescue-db:3306
+      WORDPRESS_DB_HOST: wp-rescue-db-ziptest:3306
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:?Set WORDPRESS_DB_NAME in .env}
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:?Set WORDPRESS_DB_USER in .env}
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
       WORDPRESS_TABLE_PREFIX: wp_
+    ports:
+      - "127.0.0.1:8082:80"
     volumes:
-      - wp_rescue_html:/var/www/html
+      - wp_rescue_ziptest_html:/var/www/html
       - ./wordpress/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     depends_on:
-      wp-rescue-db:
+      wp-rescue-db-ziptest:
         condition: service_healthy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.rescue.gateway=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK:-rescue_proxy}"
-      - "traefik.http.routers.wp-rescue.rule=Host(`${WORDPRESS_HOST:?Set WORDPRESS_HOST in .env}`)"
-      - "traefik.http.routers.wp-rescue.entrypoints=websecure"
-      - "traefik.http.routers.wp-rescue.tls=true"
-      - "traefik.http.routers.wp-rescue.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-myresolver}"
-      - "traefik.http.services.wp-rescue.loadbalancer.server.port=80"
-    networks:
-      - internal
-      - proxy
+    networks: [ziptest_internal]
 
-  wp-rescue-db:
-    image: ${MARIADB_IMAGE:-mariadb:11}
-    container_name: wp-rescue-db
+  wp-rescue-db-ziptest:
+    image: mariadb:11
+    container_name: wp-rescue-db-ziptest
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: ${WORDPRESS_DB_NAME:?Set WORDPRESS_DB_NAME in .env}
@@ -40,40 +34,35 @@ services:
       MARIADB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
     volumes:
-      - wp_rescue_db:/var/lib/mysql
-    networks:
-      - internal
+      - wp_rescue_ziptest_db:/var/lib/mysql
+    networks: [ziptest_internal]
     healthcheck:
       test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD --silent"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 12
-      start_period: 30s
+      retries: 20
+      start_period: 20s
 
-  wp-cli:
-    image: ${WPCLI_IMAGE:-wordpress:cli-php8.3}
-    container_name: wp-rescue-cli
+  wp-cli-ziptest:
+    image: wordpress:cli-php8.3
+    container_name: wp-rescue-cli-ziptest
     profiles: [cli]
     working_dir: /var/www/html
     environment:
-      WORDPRESS_DB_HOST: wp-rescue-db:3306
+      WORDPRESS_DB_HOST: wp-rescue-db-ziptest:3306
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:?Set WORDPRESS_DB_NAME in .env}
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:?Set WORDPRESS_DB_USER in .env}
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
     volumes:
-      - wp_rescue_html:/var/www/html
+      - wp_rescue_ziptest_html:/var/www/html
     depends_on:
-      wp-rescue-db:
+      wp-rescue-db-ziptest:
         condition: service_healthy
-    networks:
-      - internal
+    networks: [ziptest_internal]
 
 volumes:
-  wp_rescue_html:
-  wp_rescue_db:
+  wp_rescue_ziptest_html:
+  wp_rescue_ziptest_db:
 
 networks:
-  internal:
-  proxy:
-    external: true
-    name: ${TRAEFIK_NETWORK:-rescue_proxy}
+  ziptest_internal:

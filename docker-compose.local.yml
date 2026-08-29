@@ -6,68 +6,59 @@ services:
       dockerfile: wordpress/Dockerfile
     container_name: wp-rescue-local
     restart: unless-stopped
-
     environment:
       WORDPRESS_DB_HOST: wp-rescue-db:3306
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
-      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:?Set WORDPRESS_DB_NAME in .env}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:?Set WORDPRESS_DB_USER in .env}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
       WORDPRESS_TABLE_PREFIX: wp_
-
     ports:
-      - "8081:80"
-
+      - "127.0.0.1:8081:80"
     volumes:
       - wp_rescue_html:/var/www/html
       - ./wordpress/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
       - ../secure-s3-storage-for-wordpress:/var/www/html/wp-content/plugins/ozeki-database-backup-for-s3
     depends_on:
-      - wp-rescue-db
-
-    networks:
-      - internal
+      wp-rescue-db:
+        condition: service_healthy
+    networks: [internal]
 
   wp-rescue-db:
     image: mariadb:11
     container_name: wp-rescue-db-local
     restart: unless-stopped
-
     environment:
-      MARIADB_DATABASE: ${WORDPRESS_DB_NAME}
-      MARIADB_USER: ${WORDPRESS_DB_USER}
-      MARIADB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-
+      MARIADB_DATABASE: ${WORDPRESS_DB_NAME:?Set WORDPRESS_DB_NAME in .env}
+      MARIADB_USER: ${WORDPRESS_DB_USER:?Set WORDPRESS_DB_USER in .env}
+      MARIADB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
     volumes:
       - wp_rescue_db:/var/lib/mysql
-
-    networks:
-      - internal
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -u root -p$$MARIADB_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
   wp-cli:
     image: wordpress:cli-php8.3
     container_name: wp-rescue-cli-local
-
-    profiles:
-      - cli
-
+    profiles: [cli]
     working_dir: /var/www/html
-
     environment:
       WORDPRESS_DB_HOST: wp-rescue-db:3306
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
-      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
-
+      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:?Set WORDPRESS_DB_NAME in .env}
+      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:?Set WORDPRESS_DB_USER in .env}
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?Set WORDPRESS_DB_PASSWORD in .env}
     volumes:
       - wp_rescue_html:/var/www/html
       - ../secure-s3-storage-for-wordpress:/var/www/html/wp-content/plugins/ozeki-database-backup-for-s3
-
     depends_on:
-      - wp-rescue-db
-
-    networks:
-      - internal
+      wp-rescue-db:
+        condition: service_healthy
+    networks: [internal]
 
 volumes:
   wp_rescue_html:

@@ -1,207 +1,78 @@
-# wp-rescue
+# WP Rescue
 
-WordPress復旧・移行・VPSトラブル対応の検証・実演用Docker環境。
+[English](README.md)
 
-この環境は、既存の `demand-monitor` Docker基盤とは分離して構築する。
-ただし、外部公開には既存の Traefik ネットワーク `demand-monitor_web` を利用する。
+WP Rescueは、セルフホスト型WordPressサイトを構築・検証するDocker Compose基盤です。MariaDBを公開プロキシネットワークから分離し、プラグインのソースマウント開発環境と、配布ZIPのクリーン試験環境を分けて用意します。
 
-## Purpose
+> **アルファ版:** 本リポジトリは運用基盤のひな型であり、安全性を保証するマネージドサービスではありません。DNS、TLS、更新、WordPressの堅牢化、バックアップ、復元試験、監視、インシデント対応は運用者の責任です。
 
-この環境の目的は、WordPressに関する以下の作業を実際に検証・説明できる形で整備することである。
+## 収録する環境
 
-* WordPressサイトの新規構築
-* WordPressサイトの移行
-* WordPressのバックアップとリストア
-* VPS上の容量不足・Docker障害・SSL/DNSトラブル対応
-* WordPress復旧支援サービス用の実物サイト構築
-* トラブル対応事例の記録と記事化
+| Composeファイル | 用途 | ホスト側の公開 |
+| --- | --- | --- |
+| `docker-compose.yml` | 外部Traefik配下で使う本番向け構成 | WordPressの直接公開なし |
+| `docker-compose.local.yml` | プラグインのローカル開発 | `127.0.0.1:8081` |
+| `docker-compose.ziptest.yml` | 配布ZIPのクリーンインストール試験 | `127.0.0.1:8082` |
 
-## Directory Structure
+WordPress、MariaDB、プラグイン配布物、認証情報、証明書、本番データはリポジトリに含みません。
 
-```text
-~/docker/wp-rescue/
-├── docker-compose.yml
-├── README.md
-├── wordpress/
-│   └── uploads.ini
-└── backups/
-```
+## 必要なもの
 
-## Services
+- Linux上のDocker EngineとDocker Compose v2
+- WSL2上のDocker Engineにも対応します。Docker Desktopは不要です
+- 本番公開時は、[traefik-rescue](https://github.com/ozekihiroshi/traefik-rescue)等が提供する外部Traefikネットワーク
+- ソースマウント開発時は、同じ親フォルダにある`secure-s3-storage-for-wordpress`
 
-想定する主なサービスは以下の通り。
-
-```text
-wp-rescue       WordPress本体
-wp-rescue-db    WordPress専用データベース
-wp-cli          WordPress操作用CLI
-```
-
-## Network Design
-
-この環境では、アプリ内部通信用ネットワークと公開用ネットワークを分離する。
-
-```text
-internal
-  WordPress と DB 間の内部通信に使用する。
-
-dm_web
-  既存 Traefik から WordPress を公開するために使用する。
-  実体は demand-monitor_web。
-```
-
-外部公開用ネットワークは以下を利用する。
-
-```yaml
-networks:
-  dm_web:
-    external: true
-    name: demand-monitor_web
-```
-
-## Domain
-
-公開用ドメイン候補：
-
-```text
-wp.ceri.link
-```
-
-DNSのAレコードは、EC2インスタンスの Public IPv4 に向ける。
-
-## Start
+## ローカル開発
 
 ```bash
-cd ~/docker/wp-rescue
-docker compose config
+cp .env.example .env
+# 2つのchange_meを必ず変更します。
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+<http://localhost:8081> を開きます。名前付きボリュームは`down`で残ります。ローカルのサイトとDBを意図的に消す場合を除き、`--volumes`を付けないでください。
+
+## 配布ZIPのクリーン試験
+
+ZIP試験環境は、意図的にプラグインのソースをマウントしません。
+
+```bash
+docker compose -f docker-compose.ziptest.yml up -d --build
+```
+
+<http://localhost:8082> を開き、管理画面またはWP-CLIから配布ZIPをインストールします。
+
+## 本番利用
+
+1. 外部ゲートウェイを起動し、共有ネットワークを作ります（既定値`rescue_proxy`）。
+2. `.env.example`を`.env`へコピーし、認証情報と`WORDPRESS_HOST`を設定します。
+3. 構成を検証して起動します。
+
+```bash
+docker compose --env-file .env config --quiet
 docker compose up -d
-docker compose ps
 ```
 
-## Stop
+公開プロキシネットワークへ参加するのはWordPressだけです。MariaDBは非公開ネットワークに置かれ、ホスト側ポートを公開しません。[Traefik Rescueを使った本番構築](docs/production-with-traefik-rescue.md)と[バックアップと復元](docs/backup-and-restore.md)も確認してください。
+
+## 設定検証
 
 ```bash
-cd ~/docker/wp-rescue
-docker compose stop
+docker compose --env-file .env.example -f docker-compose.yml config --quiet
+docker compose --env-file .env.example -f docker-compose.local.yml config --quiet
+docker compose --env-file .env.example -f docker-compose.ziptest.yml config --quiet
 ```
 
-## Restart
+## セキュリティ上の境界
 
-```bash
-cd ~/docker/wp-rescue
-docker compose restart
-```
+- `.env`、SQLダンプ、鍵、証明書、本番アップロードをコミットしないでください。
+- 本番ではイメージのパッチ版またはdigestを固定し、事前試験してください。
+- DBとWordPressファイルの両方をバックアップし、隔離環境で復元試験してください。
+- WordPress、テーマ、プラグイン、イメージ、Docker Engine、ホストOSを更新してください。
 
-## Logs
+脆弱性の報告は[SECURITY.md](SECURITY.md)、アルファ版の制限は[CHANGELOG.md](CHANGELOG.md)を参照してください。
 
-```bash
-cd ~/docker/wp-rescue
-docker compose logs --tail=100
-```
+## ライセンス
 
-WordPressのみ確認する場合：
-
-```bash
-docker compose logs --tail=100 wp-rescue
-```
-
-DBのみ確認する場合：
-
-```bash
-docker compose logs --tail=100 wp-rescue-db
-```
-
-## Backup Policy
-
-この環境では、WordPress本体ファイルとDBを分けて考える。
-
-* WordPressファイル
-* uploads
-* themes
-* plugins
-* database dump
-
-バックアップ保存先：
-
-```text
-~/docker/wp-rescue/backups/
-```
-
-DBバックアップ例：
-
-```bash
-docker compose exec -T wp-rescue-db mariadb-dump -u root -p wp_rescue > backups/wp_rescue_$(date +%Y%m%d_%H%M%S).sql
-```
-
-※ 実際のパスワードやDB名は `docker-compose.yml` の内容に合わせる。
-
-## Important Notes
-
-この環境では、既存の `demand-monitor` や `keiba-signal` のコンテナ・DB・ボリュームを直接利用しない。
-
-WordPress環境を破棄する場合でも、原則として以下は安易に実行しない。
-
-```bash
-docker compose down -v
-```
-
-`-v` を付けると、DBやWordPressファイルを格納するDockerボリュームが削除される可能性があるため注意する。
-
-## Current Status
-
-初期構築段階。
-
-作成済みファイル：
-
-```text
-docker-compose.yml
-wordpress/uploads.ini
-README.md
-```
-
-次に行う作業：
-
-```text
-1. docker compose config で構文確認
-2. DNS Aレコード確認
-3. docker compose up -d
-4. WordPress初期セットアップ
-5. バックアップ・リストア手順の整備
-6. WordPress復旧・移行サービス用コンテンツ作成
-```
-
-## Operational Memo
-
-今回の環境は、単なるWordPressサイトではなく、WordPress復旧・移行・VPSトラブル対応の実例を蓄積するための基盤である。
-
-特に以下のような実トラブル事例を記録対象とする。
-
-* EBS容量不足
-* Dockerコンテナの固着
-* `Stopping` のまま進まないコンテナ
-* Docker daemon / containerd の再起動
-* EC2 Reboot / Stop-Start の使い分け
-* WordPress DB復旧
-* WordPressファイル移行
-* SSL証明書・Traefik・DNSの問題
-
-## Site Concept
-
-サイト名候補：
-
-- WP Rescue Lab
-- WPレスキューラボ
-
-このWordPressサイトは、WordPress復旧・移行・VPSトラブル対応を扱う日英対応サイトとして構築する。
-
-主言語は日本語、副言語は英語とする。  
-日本国内向けの支援内容を日本語で整理しつつ、海外案件・ポートフォリオ向けに英語ページも整備する。
-
-想定コンテンツ：
-
-- WordPress recovery
-- WordPress migration
-- VPS troubleshooting
-- Docker / Traefik / Nginx recovery
-- DNS / SSL troubleshooting
-- Backup and restore workflows
+Copyright 2026 Hiroshi Ozeki. GNU General Public License version 3またはそれ以降。全文は[LICENSE](LICENSE)を参照してください。
