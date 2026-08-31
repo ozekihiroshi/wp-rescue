@@ -6,7 +6,7 @@ expected_job=${1:?Pass the known test job ID}
 [[ "$expected_job" =~ ^[a-f0-9]{32}$ ]]
 for ((sample=0; sample<360; sample++)); do
     curl --fail --silent --show-error --max-time 35 --output /dev/null \
-        http://127.0.0.1:8084/wp-cron.php
+        http://127.0.0.1:18084/wp-cron.php
     status=$(docker exec --user www-data odbfs3-media-ziptest-web \
         php /opt/ziptest-tools/background-test.php status)
     printf '%s\n' "$status"

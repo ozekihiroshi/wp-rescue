@@ -43,6 +43,8 @@ docker compose -f docker-compose.ziptest.yml up -d --build
 
 Open <http://localhost:8082>, then install the release ZIP through WordPress or WP-CLI.
 
+See [8082 private media storage (Japanese)](docs/ziptest-media-storage.md) for the dedicated work volume and precautions when updating an existing stack under a legacy Compose project name.
+
 ## Production
 
 1. Start the external gateway and create its shared network (default `rescue_proxy`).

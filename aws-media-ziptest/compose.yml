@@ -20,8 +20,9 @@ services:
       AWS_REGION: ap-northeast-1
       WORDPRESS_CONFIG_EXTRA: |
         define('ODBFS3_ISOLATED_ZIPTEST', true);
-        define('WP_HOME', 'http://127.0.0.1:8084');
-        define('WP_SITEURL', 'http://127.0.0.1:8084');
+        define('ODBFS3_MEDIA_WORK_DIR', '/var/lib/odbfs3-work/plans');
+        define('WP_HOME', 'http://127.0.0.1:18084');
+        define('WP_SITEURL', 'http://127.0.0.1:18084');
         define('WP_ENVIRONMENT_TYPE', 'local');
         define('AUTOMATIC_UPDATER_DISABLED', true);
         define('WP_AUTO_UPDATE_CORE', false);
@@ -29,7 +30,7 @@ services:
         define('WP_MEMORY_LIMIT', '128M');
         define('WP_MAX_MEMORY_LIMIT', '128M');
     ports:
-      - "127.0.0.1:8084:8084"
+      - "127.0.0.1:18084:18084"
     volumes:
       - html:/var/www/html
       - work:/var/lib/odbfs3-work
@@ -46,7 +47,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "5", "--output", "/dev/null", "http://127.0.0.1:8084/wp-login.php"]
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "5", "--output", "/dev/null", "http://127.0.0.1:18084/wp-login.php"]
       interval: 15s
       timeout: 6s
       retries: 10

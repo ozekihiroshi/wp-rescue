@@ -43,6 +43,8 @@ docker compose -f docker-compose.ziptest.yml up -d --build
 
 <http://localhost:8082> を開き、管理画面またはWP-CLIから配布ZIPをインストールします。
 
+メディアバックアップの非公開作業ボリュームと、旧プロジェクト名の既存8082を更新する注意点は[8082メディア作業領域](docs/ziptest-media-storage.md)を参照してください。
+
 ## 本番利用
 
 1. 外部ゲートウェイを起動し、共有ネットワークを作ります（既定値`rescue_proxy`）。

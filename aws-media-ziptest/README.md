@@ -11,7 +11,7 @@ Use it only on the authorized AWS test host. Do not run `down -v`, prune, or
 - Containers: `odbfs3-media-ziptest-web`, `odbfs3-media-ziptest-db`.
 - Three project-owned volumes: HTML/uploads, database, private working plans.
 - Dedicated internal database network and a separate outbound AWS network.
-- No external ingress: host port `127.0.0.1:8084`; Traefik disabled.
+- No external ingress: host port `127.0.0.1:18084`; Traefik disabled.
 - Web memory cap 256 MiB; DB cap 192 MiB; no container swap, 0.5 CPU each.
 - No automatic restart. Explicitly start/stop this project between tests.
 - Reuses cached production image digests without upgrading production. Initial
@@ -36,7 +36,7 @@ docker exec --user www-data odbfs3-media-ziptest-web \
 docker exec --user www-data odbfs3-media-ziptest-web \
   php /opt/ziptest-tools/initialize.php
 curl --fail --silent --show-error --max-time 30 \
-  http://127.0.0.1:8084/wp-cron.php
+  http://127.0.0.1:18084/wp-cron.php
 ```
 
 Passwords are generated only on the server under `private/` (excluded from Git).
@@ -49,10 +49,14 @@ Do not regenerate these credentials after DB initialization.
 From the local PC, keep this SSH tunnel open:
 
 ```sh
-ssh -N -L 127.0.0.1:8084:127.0.0.1:8084 community
+ssh -N -L 127.0.0.1:18084:127.0.0.1:18084 community
 ```
 
-Open `http://127.0.0.1:8084/wp-admin/`. User: `ziptest_admin`.
+Open `http://127.0.0.1:18084/wp-admin/`. User: `ziptest_admin`.
+The admin UI test moved this environment from 8084 to 18084 to avoid the
+local Moodle release-test listener. Older acceptance reports retain their
+historical 8084 addresses; use 18084 for current commands. Both Apache and the
+WordPress URL use 18084 so internal HTTP Cron also continues to work.
 Retrieve the password privately from the server's `private/admin-password` file
 when needed; do not send it to the assistant. No public hostname is configured.
 
