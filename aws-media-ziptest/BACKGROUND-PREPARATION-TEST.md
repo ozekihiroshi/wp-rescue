@@ -1,5 +1,20 @@
 # Distribution ZIP / background preparation acceptance test
 
+## Follow-up 2026-08-31: preparation batching retest passed
+
+Plugin commit `5d8dd7a24ddcd97993b4e09f556fb306ce9ff632`, helper commit
+`f454b4d02f99ca7a2aa6d26e82cf93a20dd3c251`; all six CI workflows green.
+Development ZIP SHA-256:
+`ba3a40e7c70ff139f6dac88aa02cc30fef0b29ab65dcb676a7878b54c6000d18`.
+All 3,858 installed files matched. Normal year/month initialization occurred
+before enqueue; the backup's directory-change checks were unchanged.
+Small job `532a4ec3c4b8db2599cad695556a17e0`: 31 files, one HTTP callback, 6 s.
+Large job `67cae9db3bf81d1b4fd9afad260f45e6`: 2,006 files, 1,107,367,888 bytes,
+preparation approximately 10 min 8 s, complete upload 32 min 2 s / 33 callbacks.
+Both independently restored and hash-matched. Ordinary one-minute Cron only.
+Full report in the sibling plugin repo:
+`docs/aws-preparation-batches-test-2026-08-31.md`. Prior failed evidence remains.
+
 ## 2026-08-31 outcome: not a full acceptance pass
 
 The smoke run (`5b6fabd7807933da730fd76771e1fe85`, 31 files) passed preparation,
