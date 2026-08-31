@@ -21,7 +21,7 @@ try {
     $work = '/var/lib/odbfs3-work';
     $slug = 'ozeki-database-backup-for-s3';
     $plugin = $slug . '/' . $slug . '.php';
-    $zip = $work . '/artifacts/preparation-9deffc6.zip';
+    $zip = $work . '/artifacts/preparation-batches.zip';
     if (in_array($mode, ['update', 'verify'], true)) {
         if (!preg_match('/^[a-f0-9]{64}$/D', $argv[2] ?? '') || !hash_equals($argv[2], hash_file('sha256', $zip))) {
             throw new RuntimeException('Wrong release ZIP.');
@@ -106,13 +106,25 @@ try {
             }
         } finally { fclose($expected); }
         if ($count !== $info['files'] || $bytes !== $info['bytes']) { throw new RuntimeException('Fixture totals differ.'); }
-        update_option('upload_path', $root); wp_upload_dir(null, false, true);
+        update_option('upload_path', $root);
+        // Fixture/site initialization only: do normal WordPress mkdir BEFORE
+        // the backup takes its snapshot. Workers must remain source-read-only.
+        $uploads = wp_upload_dir(null, false, true);
+        if (!empty($uploads['error']) || $uploads['basedir'] !== $root
+            || ($uploads['path'] !== $root && !str_starts_with($uploads['path'], $root . '/'))) {
+            throw new RuntimeException('Unexpected WordPress upload path.');
+        }
+        $initialized = wp_upload_dir(null, true, true);
+        if (!empty($initialized['error']) || $initialized['path'] !== $uploads['path']
+            || $initialized['basedir'] !== $root || !is_dir($initialized['path'])) {
+            throw new RuntimeException('WordPress upload directory initialization failed.');
+        }
         $started = microtime(true);
         $job = $controller->enqueuePreparation($work . '/plans');
         if ($job->checkpoint['phase'] !== 'enumerate' || file_exists($job->checkpoint['directory'] . '/paths.jsonl')
             || file_exists($job->checkpoint['directory'] . '/ready.json')) { throw new RuntimeException('Preparation ran during enqueue.'); }
         echo json_encode(['result' => 'queued_unprepared_fixture', 'id' => $job->id, 'label' => $label,
-            'files' => $count, 'bytes' => $bytes, 'enqueue_seconds' => round(microtime(true)-$started, 3)], JSON_THROW_ON_ERROR) . "\n";
+            'files' => $count, 'bytes' => $bytes, 'upload_subdir' => $initialized['subdir'], 'enqueue_seconds' => round(microtime(true)-$started, 3)], JSON_THROW_ON_ERROR) . "\n";
     } elseif ($mode === 'status') {
         $job = (new MediaJobController())->current(); $s = $job?->checkpoint ?? [];
         $events = 0; $next = null;

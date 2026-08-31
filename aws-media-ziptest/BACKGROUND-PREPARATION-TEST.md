@@ -32,11 +32,16 @@ preparation and upload. Never run these helpers on production.
 - SHA-256: `4e8d7e1d16e53cb617044739e2d42aa80df0654edce4c1b2e33e3783e2e52cad`.
 - Built from a clean `git archive` of that commit, not the working tree.
 - Header is still development 0.1.1; **do not replace the public 0.1.1 release**.
-- This helper intentionally pins the artifact basename `preparation-9deffc6.zip`.
-  A future build needs an explicit helper/provenance update, not a silent swap.
+- The preceding run used `preparation-9deffc6.zip`; preserve that old artifact.
+- The next run uses `preparation-batches.zip` with an explicitly supplied SHA-256
+  and a fresh build from the new committed source. Record its provenance separately.
+- The helper now initializes the normal WordPress year/month path before enqueue.
+  Backup runtime remains read-only on the source, and later directory changes
+  must still fail. Preparation allows 1,000 steps, upload at most 100, within
+  the same cooperative 20-second callback budget. Cron remains once per minute.
 
 Copy the completed ZIP to the isolated web container's private path
-`/var/lib/odbfs3-work/artifacts/preparation-9deffc6.zip` as www-data, mode 0600.
+`/var/lib/odbfs3-work/artifacts/preparation-batches.zip` as www-data, mode 0600.
 Wait for transfer completion and compare SHA-256 **before** installing. Preserve
 old artifacts, plans, job results, fixture roots and restored directories.
 
