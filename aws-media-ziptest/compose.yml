@@ -1,0 +1,117 @@
+name: odbfs3-media-ziptest
+
+# Standalone AWS test project. Never combine with a production Compose file.
+services:
+  web:
+    image: wordpress@sha256:d32999a243ee5051babf8580ff22e7254129fe2f209f3d10aacdc81fdcd33959
+    pull_policy: never
+    container_name: odbfs3-media-ziptest-web
+    restart: "no"
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.50
+    pids_limit: 100
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: odbfs3_ziptest
+      WORDPRESS_DB_USER: odbfs3_ziptest
+      WORDPRESS_DB_PASSWORD_FILE: /run/secrets/db_password
+      WORDPRESS_TABLE_PREFIX: ziptest_
+      AWS_REGION: ap-northeast-1
+      WORDPRESS_CONFIG_EXTRA: |
+        define('ODBFS3_ISOLATED_ZIPTEST', true);
+        define('WP_HOME', 'http://127.0.0.1:8084');
+        define('WP_SITEURL', 'http://127.0.0.1:8084');
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        define('AUTOMATIC_UPDATER_DISABLED', true);
+        define('WP_AUTO_UPDATE_CORE', false);
+        define('DISALLOW_FILE_EDIT', true);
+        define('WP_MEMORY_LIMIT', '128M');
+        define('WP_MAX_MEMORY_LIMIT', '128M');
+    ports:
+      - "127.0.0.1:8084:8084"
+    volumes:
+      - html:/var/www/html
+      - work:/var/lib/odbfs3-work
+      - ./php-test.ini:/usr/local/etc/php/conf.d/zz-ziptest.ini:ro
+      - ./apache-test.conf:/etc/apache2/conf-enabled/zz-ziptest.conf:ro
+      - ./tools:/opt/ziptest-tools:ro
+    secrets:
+      - db_password
+      - admin_password
+    labels:
+      traefik.enable: "false"
+    networks: [database, aws_access]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "5", "--output", "/dev/null", "http://127.0.0.1:8084/wp-login.php"]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "2"
+
+  db:
+    image: mariadb@sha256:be1ef4fe5f14589325c08a41c76334097ce66c86264b75e1d28342c742782a61
+    pull_policy: never
+    container_name: odbfs3-media-ziptest-db
+    restart: "no"
+    mem_limit: 192m
+    memswap_limit: 192m
+    cpus: 0.50
+    pids_limit: 100
+    command:
+      - --innodb-buffer-pool-size=64M
+      - --max-connections=15
+      - --performance-schema=OFF
+      - --key-buffer-size=8M
+      - --aria-pagecache-buffer-size=8M
+      - --max-allowed-packet=16M
+    environment:
+      MARIADB_DATABASE: odbfs3_ziptest
+      MARIADB_USER: odbfs3_ziptest
+      MARIADB_PASSWORD_FILE: /run/secrets/db_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+    secrets:
+      - db_password
+      - db_root_password
+    volumes:
+      - database:/var/lib/mysql
+    labels:
+      traefik.enable: "false"
+    networks: [database]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "2"
+
+volumes:
+  html:
+  database:
+  work:
+
+networks:
+  database:
+    internal: true
+  aws_access:
+
+secrets:
+  db_password:
+    file: ./private/db-password
+  db_root_password:
+    file: ./private/db-root-password
+  admin_password:
+    file: ./private/admin-password

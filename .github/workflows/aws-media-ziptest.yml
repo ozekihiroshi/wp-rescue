@@ -1,0 +1,29 @@
+name: AWS media ZIP test configuration
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Validate isolated Compose without starting services
+        run: docker compose -f aws-media-ziptest/compose.yml config --quiet
+      - name: Lint test helpers without executing AWS operations
+        run: |
+          find aws-media-ziptest/tools -name '*.php' -print0 | xargs -0 -n1 php -l
+          bash -n aws-media-ziptest/tools/watch-cron.sh
+      - name: Ensure private credentials and artifacts remain ignored
+        run: |
+          git check-ignore --quiet aws-media-ziptest/private/db-password
+          git check-ignore --quiet aws-media-ziptest/private/admin-password
+          git check-ignore --quiet aws-media-ziptest/artifacts/release.zip
