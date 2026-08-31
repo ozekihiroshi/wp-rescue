@@ -9,6 +9,12 @@ foreach ([1 => 'before', 20 => 'after'] as $priority => $phase) {
             'event_job_id' => $id, 'job_id' => $job?->id, 'status' => $job?->status,
             'files' => $job?->processedFiles, 'bytes' => $job?->processedBytes,
             'part' => $job?->checkpoint['part'] ?? null,
+            'job_phase' => $job?->checkpoint['phase'] ?? 'upload',
+            'prepared_files' => $job?->checkpoint['files'] ?? null,
+            'queue_cursor' => $job?->checkpoint['queue_cursor'] ?? null,
+            'sort_cursor' => $job?->checkpoint['sort_cursor'] ?? null,
+            'hash_offset' => $job?->checkpoint['hash_offset'] ?? null,
+            'part_offset' => $job?->checkpoint['part_offset'] ?? null,
             'attempts' => $job?->attempts, 'peak_bytes' => memory_get_peak_usage(true)];
         $previous = umask(0077);
         file_put_contents('/var/lib/odbfs3-work/cron-observations.jsonl',

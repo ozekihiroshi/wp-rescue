@@ -48,6 +48,8 @@ function downloadObject(object $client, string $bucket, string $key, string $pat
     } finally { if (is_resource($stream)) { fclose($stream); } }
 }
 
+if (defined('ODBFS3_FIXTURE_HELPERS_ONLY')) { return; }
+
 try {
     if (PHP_SAPI !== 'cli' || getenv('WORDPRESS_DB_NAME') !== 'odbfs3_ziptest'
         || getenv('WORDPRESS_DB_HOST') !== 'db:3306') { throw new RuntimeException('Wrong environment.'); }
