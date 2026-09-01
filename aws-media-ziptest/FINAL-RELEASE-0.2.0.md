@@ -86,7 +86,20 @@ database to the configured test prefix.
 - `ziptest_options` was handled separately because successful backup history
   is recorded after dump creation. Its plugin settings row checksum matched.
 
-## Publication boundary
+## GitHub publication
 
-The 0.2.0 candidate passed its release gate. Publishing to GitHub Releases and
-WordPress.org SVN remains a separate explicit release action.
+- Annotated tag v0.2.0 points to plugin commit aeaf6b9.
+- GitHub Release Ozeki Database Backup for S3 0.2.0 is public, non-draft,
+  non-prerelease and selected as Latest.
+- The explicitly attached asset is
+  ozeki-database-backup-for-s3-0.2.0.zip, 8,203,878 bytes.
+- The asset downloaded back from GitHub was byte-for-byte identical to the
+  tested local ZIP and retained SHA-256
+  589d8c3c38f168e51d011f575b290dd0f70138a9be9d4a79059290ca19d70935.
+- Release URL:
+  https://github.com/ozekihiroshi/secure-s3-storage-for-wordpress/releases/tag/v0.2.0.
+
+## Remaining publication boundary
+
+WordPress.org SVN trunk update and tags/0.2.0 creation remain a separate
+explicit release action.
