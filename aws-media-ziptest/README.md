@@ -81,3 +81,5 @@ docker compose -f compose.yml stop
 
 ZIP installation, S3 transfer, media-job persistence, recovery and restore
 verification are separate acceptance checks after this environment is ready.
+The latest completion-paced Cron and independent 1 GiB restore result is in
+[`CRON-OPTIMIZATION-TEST.md`](CRON-OPTIMIZATION-TEST.md).
